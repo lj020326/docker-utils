@@ -1,0 +1,80 @@
+name: Publish Docker Image
+
+on:
+  # Allows manual triggering
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches: ['*']
+  schedule:
+    ## Nightly Docker Image Rebuild (1:05am daily)
+    - cron: '5 1 * * *'
+
+jobs:
+  # --- Phase 1: Parse Configuration ---
+  parse_config:
+    name: Parse Image Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      base_images: ${{ steps.filter.outputs.base }}
+      dependent_images: ${{ steps.filter.outputs.dependent }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Parse YAML config into JSON matrices
+        id: filter
+        run: |
+          # Use yq to filter images by type and export as compressed JSON
+          BASE_JSON=$(yq -o=json -I=0 '.images | map(select(.type == "base"))' .github/images-config.yml)
+          DEP_JSON=$(yq -o=json -I=0 '.images | map(select(.type == "dependent"))' .github/images-config.yml)
+          
+          echo "base=$BASE_JSON" >> $GITHUB_OUTPUT
+          echo "dependent=$DEP_JSON" >> $GITHUB_OUTPUT
+
+  # --- Phase 2: Build Base Images First ---
+  build_base_images:
+    name: Build Base Images
+    needs: parse_config
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        versions: ${{ fromJson(needs.parse_config.outputs.base_images) }}
+    steps:
+      - name: Wait for workflow queue
+        uses: ahmadnassri/action-workflow-queue@v1
+
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Build and Push Core Logic
+        uses: ./.github/actions/build-push-internal
+        with:
+          matrix_version: ${{ toJson(matrix.versions) }}
+          docker_hub_token: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+  # --- Phase 3: Build Dependent Images ---
+  build_dependent_images:
+    name: Build Dependent Images
+    needs: [parse_config, build_base_images]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        versions: ${{ fromJson(needs.parse_config.outputs.dependent_images) }}
+    steps:
+      - name: Wait for workflow queue
+        uses: ahmadnassri/action-workflow-queue@v1
+
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Build and Push Core Logic
+        uses: ./.github/actions/build-push-internal
+        with:
+          matrix_version: ${{ toJson(matrix.versions) }}
+          docker_hub_token: ${{ secrets.DOCKER_HUB_TOKEN }}

@@ -1,0 +1,20 @@
+---
+alwaysEmailList: ljohnson@dettonville.org
+logLevel: DEBUG
+maxRandomDelaySeconds: 20
+failFast: true
+
+runGroupsInParallel: false
+runInParallel: true
+
+buildArgs:
+  IMAGE_REGISTRY: media.johnson.int:5000
+
+buildTags:
+  - "latest"
+
+buildImageGroups:
+  docker-utilities:
+    buildImageList:
+      - buildImageName: "nord-key-extractor"
+        buildDir: "image/nord-key-extractor"

@@ -1,0 +1,7 @@
+# .github/images-config.yml
+images:
+  - name: nord-key-extractor
+    dockerfile: image/nord-key-extractor/Dockerfile
+    context: image/nord-key-extractor
+    tag: latest
+    type: base
