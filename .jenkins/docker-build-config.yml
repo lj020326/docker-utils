@@ -10,6 +10,10 @@ runInParallel: true
 buildArgs:
   IMAGE_REGISTRY: media.johnson.int:5000
 
+buildPlatforms:
+  - linux/amd64
+  - linux/arm64
+
 buildTags:
   - "latest"
 
@@ -18,3 +22,7 @@ buildImageGroups:
     buildImageList:
       - buildImageName: "nord-key-extractor"
         buildDir: "image/nord-key-extractor"
+      - buildImageName: "langgraph-router"
+        buildDir: "image/langgraph-router"
+      - buildImageName: "crewai-workers"
+        buildDir: "image/crewai-workers"

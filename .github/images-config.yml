@@ -5,3 +5,15 @@ images:
     context: image/nord-key-extractor
     tag: latest
     type: base
+
+  - name: langgraph-router
+    dockerfile: image/langgraph-router/Dockerfile
+    context: image/langgraph-router
+    tag: latest
+    type: dependent
+
+  - name: crewai-workers
+    dockerfile: image/crewai-workers/Dockerfile
+    context: image/crewai-workers
+    tag: latest
+    type: dependent

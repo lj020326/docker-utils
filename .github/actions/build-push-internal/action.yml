@@ -61,6 +61,7 @@ runs:
         context: ${{ fromJson(inputs.matrix_version).context }}
         file: ${{ fromJson(inputs.matrix_version).dockerfile }}
         tags: ${{ steps.meta.outputs.tags }}
+        platforms: linux/amd64,linux/arm64
         build-args: |
           BUILD_ID=${{ env.BUILD_ID }}
           BUILD_DATE=${{ steps.date.outputs.date }}
