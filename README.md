@@ -44,4 +44,5 @@ A declarative build manifest configuration is located inside `.jenkins/docker-bu
 ## 🛡️ Identity & Maintainer
 * **Maintainer:** Lee Johnson
 * **Contact:** <ljohnson@dettonville.org>
+* **LinkedIn:** https://www.linkedin.com/in/leejjohnson/
 * **System Framework:** [Dettonville Cloud Infrastructure Services](https://dettonville.org)

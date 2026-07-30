@@ -1,3 +1,4 @@
-uvicorn
 fastapi
+langchain-openai
 langgraph
+uvicorn

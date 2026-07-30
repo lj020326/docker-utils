@@ -26,3 +26,5 @@ buildImageGroups:
         buildDir: "image/langgraph-router"
       - buildImageName: "crewai-workers"
         buildDir: "image/crewai-workers"
+      - buildImageName: "run-cocoindex"
+        buildDir: "image/run-cocoindex"

@@ -1,0 +1,8 @@
+asyncpg
+cocoindex
+cocoindex[postgres]
+gitpython
+httpx
+litellm
+pydantic
+pyyaml

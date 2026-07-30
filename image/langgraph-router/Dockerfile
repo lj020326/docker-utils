@@ -18,67 +18,59 @@ LABEL build=$BUILD_ID
 ENV container=docker
 ENV DEBIAN_FRONTEND=noninteractive
 
-ENV HOME=/app
+# Establish system workspace and cache targets
+ENV WORKSPACE_DIR=/app \
+    CACHE_DIR=/cache \
+    HOME=/cache \
+    XDG_CONFIG_HOME=/cache/.config \
+    XDG_CACHE_HOME=/cache/.cache \
+    XDG_DATA_HOME=/cache/.local/share \
+    TZ=Etc/UTC \
+    VIRTUAL_ENV=/opt/venv
 
-ENV TZ=Etc/UTC
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-## 1. Core System Utilities & Locales
-# These rarely change and provide the base for everything else
+# === System Dependencies ===
 RUN apt-get update -qqy && \
     apt-get -qqy --no-install-recommends install \
-      apt-transport-https apt-utils ca-certificates \
-      bash tar zip unzip xorriso \
-      curl wget git git-lfs \
+      apt-transport-https ca-certificates curl wget git git-lfs \
+      bash tar zip unzip \
       locales tzdata netbase \
-      software-properties-common \
-      tree less nano jq rsync && \
+      tree less nano jq rsync \
+      dnsutils iproute2 iputils-ping inetutils-telnet \
+      openssh-client ssh-askpass sshpass \
+      gpg gpg-agent gnupg2 \
+      shellcheck && \
     sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-## 2. Networking & Debugging Tools
-RUN apt-get update -qqy && \
-    apt-get -qqy --no-install-recommends install \
-      dnsutils iproute2 iputils-ping inetutils-telnet \
-      openssh-client ssh-askpass sshpass \
-      gpg gpg-agent gnupg2 \
-      ldap-utils \
-      shellcheck groff rlwrap && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
 ## Ensure the following are set after running `locale-gen`
-ENV LANGUAGE=en_US:en
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
+ENV LANGUAGE=en_US:en \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
 
 #==========
 # PIP - Install Python dependencies
 #==========
 
-COPY requirements.txt .
-
-ENV VIRTUAL_ENV=/opt/venv
+# Create venv
 RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Upgrade core tools
 RUN pip install --no-cache-dir --upgrade pip wheel setuptools
 
-# Install requirements.txt first
+# Install Python requirements
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Ensure non-root runtime environments can cleanly access and utilize the venv fully
-RUN chmod -R 755 /opt/venv
+# Create working directory
+WORKDIR ${WORKSPACE_DIR}
 
-#COPY entrypoint.sh /opt/bin/entrypoint.sh
-#COPY functions.sh /opt/bin/functions.sh
-#RUN chmod +x /opt/bin/entrypoint.sh \
-#  && chmod +x /opt/bin/functions.sh
+# 1. Bake the production daemon file into the image workspace
+COPY main.py ${WORKSPACE_DIR}/main.py
 
-# COPY entrypoint.sh /opt/bin/entrypoint.sh
-# RUN chmod +x /opt/bin/entrypoint.sh
-
-# Create a working directory
-WORKDIR /app
+# 2. Provision the decoupled caching matrix
+RUN mkdir -p ${CACHE_DIR}/.config ${CACHE_DIR}/.local ${CACHE_DIR}/.cache
 
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
