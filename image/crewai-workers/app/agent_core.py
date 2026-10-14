@@ -146,6 +146,22 @@ def _execute_shell_command(command: str, cwd: str, timeout=60) -> Dict[str, Any]
         return {"status": "failed", "error": str(e)}
 
 
+def load_gitignore_patterns(workspace_path: str) -> set:
+    """Reads .gitignore from the workspace path if present and returns a set of valid patterns."""
+    patterns = set()
+    gitignore_path = os.path.join(workspace_path, ".gitignore")
+    if os.path.exists(gitignore_path):
+        try:
+            with open(gitignore_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and not line.startswith("!"):
+                        patterns.add(line)
+        except Exception as e:
+            logger.warning(f"Failed to parse .gitignore at {gitignore_path}: {e}")
+    return patterns
+
+
 # ===================================================================
 # STRUCTURED WORKSPACE TOOL SCHEMAS & CLASSES
 # ===================================================================
@@ -344,23 +360,7 @@ class ListRepoFilesTool(BaseTool):
                 "venv",
                 ".venv",
             }
-            gitignore_patterns = set()
-            gitignore_path = os.path.join(self.workspace_path, ".gitignore")
-
-            if os.path.exists(gitignore_path):
-                try:
-                    with open(gitignore_path, "r", encoding="utf-8") as f:
-                        for line in f:
-                            line = line.strip()
-                            if (
-                                line
-                                and not line.startswith("#")
-                                and not line.startswith("!")
-                            ):
-                                gitignore_patterns.add(line)
-                except Exception as e:
-                    logger.warning(f"Failed to parse .gitignore: {e}")
-
+            gitignore_patterns = load_gitignore_patterns(self.workspace_path)
             exclude_patterns = always_exclude.union(gitignore_patterns)
             files = []
 
